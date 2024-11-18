@@ -78,28 +78,6 @@ public class SkullUtils {
 		}
 	}
 
-	private static Field getField(Class<?> clazz) {
-		Field field = null;
-
-		try {
-			field = clazz.getDeclaredField("profile");
-			return field;
-		} catch (NoSuchFieldException ignored) {}
-
-
-		Class<?> superClass = clazz.getSuperclass();
-		while (superClass != null && field == null) {
-			try {
-				field = superClass.getDeclaredField("profile");
-				break;
-			} catch (NoSuchFieldException ignored) {
-				superClass = superClass.getSuperclass();
-			}
-		}
-
-		return field;
-	}
-
 	public static ItemStack createPlayerHead(OfflinePlayer player, String displayName, List<String> lore) {
 		ItemStack baseItem = CompMaterial.PLAYER_HEAD.toItem();
 		SkullMeta meta = (SkullMeta) baseItem.getItemMeta();
