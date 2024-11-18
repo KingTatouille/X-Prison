@@ -5,11 +5,17 @@ import com.mojang.authlib.properties.Property;
 import dev.drawethree.xprison.utils.compat.CompMaterial;
 import dev.drawethree.xprison.utils.compat.MinecraftVersion;
 import dev.drawethree.xprison.utils.item.ItemStackBuilder;
+import org.bukkit.Bukkit;
+import org.bukkit.Material;
 import org.bukkit.OfflinePlayer;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.inventory.meta.SkullMeta;
+import org.bukkit.profile.PlayerProfile;
+import org.bukkit.profile.PlayerTextures;
 
 import java.lang.reflect.Field;
+import java.net.URL;
+import java.util.Base64;
 import java.util.List;
 import java.util.UUID;
 
@@ -33,31 +39,66 @@ public class SkullUtils {
 	}
 
 	public static ItemStack getCustomTextureHead(String value) {
-		ItemStack head = CompMaterial.PLAYER_HEAD.toItem();
+		ItemStack head = new ItemStack(Material.PLAYER_HEAD);
+		if (value == null || value.isEmpty()) return head;
 
 		SkullMeta meta = (SkullMeta) head.getItemMeta();
+		if (meta == null) return head;
 
-		GameProfile profile;
 		try {
-			profile = new GameProfile(UUID.randomUUID(), null);
-		}
-		catch (Throwable t) {
-			profile = new GameProfile(UUID.randomUUID(), "X-Prison");
-		}
+			String decoded = new String(Base64.getDecoder().decode(value));
+			String textureUrl = extractTextureUrl(decoded);
 
-		profile.getProperties().put("textures", new Property("textures", value));
-		Field profileField;
-		try {
-			profileField = meta.getClass().getDeclaredField("profile");
-			profileField.setAccessible(true);
-			profileField.set(meta, profile);
-		} catch (IllegalArgumentException | IllegalAccessException | NoSuchFieldException | SecurityException e) {
+			if (textureUrl != null) {
+				PlayerProfile profile = Bukkit.createPlayerProfile(UUID.randomUUID());
+				PlayerTextures textures = profile.getTextures();
+				URL url = new URL(textureUrl);
+				textures.setSkin(url);
+				profile.setTextures(textures);
+
+				meta.setOwnerProfile(profile);
+			}
+		} catch (Exception e) {
 			e.printStackTrace();
+			return head;
 		}
+
 		head.setItemMeta(meta);
 		return head;
 	}
 
+	private static String extractTextureUrl(String decoded) {
+		try {
+			int urlStart = decoded.indexOf("\"url\":\"") + 7;
+			int urlEnd = decoded.indexOf("\"", urlStart);
+			return decoded.substring(urlStart, urlEnd);
+		} catch (Exception e) {
+			e.printStackTrace();
+			return null;
+		}
+	}
+
+	private static Field getField(Class<?> clazz) {
+		Field field = null;
+
+		try {
+			field = clazz.getDeclaredField("profile");
+			return field;
+		} catch (NoSuchFieldException ignored) {}
+
+
+		Class<?> superClass = clazz.getSuperclass();
+		while (superClass != null && field == null) {
+			try {
+				field = superClass.getDeclaredField("profile");
+				break;
+			} catch (NoSuchFieldException ignored) {
+				superClass = superClass.getSuperclass();
+			}
+		}
+
+		return field;
+	}
 
 	public static ItemStack createPlayerHead(OfflinePlayer player, String displayName, List<String> lore) {
 		ItemStack baseItem = CompMaterial.PLAYER_HEAD.toItem();

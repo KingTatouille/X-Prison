@@ -41,7 +41,7 @@ public class EnchantsManager {
 
     private static final String EXCLUDE_PERMISSION = "xprison.enchant.exclude.";
 	private static final String UNBREAK_PERMISSION = "xprison.pickaxe.unbreakable";
-	private static final boolean USE_META_UNBREAK = ServerInstance.verNumber >= 11;
+	private static final boolean USE_META_UNBREAK = true;
 	private static final Pattern PICKAXE_LORE_ENCHANT_PATTER = Pattern.compile("(?i)%Enchant-\\d+%");
 
 	private final XPrisonEnchants plugin;
